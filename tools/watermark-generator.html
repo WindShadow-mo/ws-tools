@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图片水印生成器</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: #f0f2f5;
+    color: #333;
+    min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    padding: 24px 0;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+  .header h1 { font-size: 26px; font-weight: 600; }
+  .header p { margin-top: 6px; font-size: 14px; opacity: .85; }
+  .container {
+    max-width: 1100px;
+    margin: 24px auto;
+    padding: 0 16px;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 24px;
+  }
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    padding: 24px;
+  }
+  .panel h2 {
+    font-size: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  .form-group { margin-bottom: 18px; }
+  .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: #555;
+  }
+  .form-group input[type="text"],
+  .form-group textarea,
+  .form-group select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color .2s;
+    font-family: inherit;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102,126,234,.15);
+  }
+  .form-group textarea { resize: vertical; min-height: 60px; }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .range-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .range-wrap input[type="range"] { flex: 1; }
+  .range-val {
+    min-width: 40px;
+    text-align: right;
+    font-size: 13px;
+    color: #888;
+  }
+  .color-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .color-input input[type="color"] {
+    width: 36px; height: 36px;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 2px;
+  }
+  .color-input span { font-size: 13px; color: #888; }
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .checkbox-group input { width: 16px; height: 16px; cursor: pointer; }
+  .checkbox-group span { font-size: 13px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .2s;
+    width: 100%;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+  }
+  .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-download {
+    background: #52c41a;
+    color: #fff;
+    margin-top: 10px;
+  }
+  .btn-download:hover { background: #46a817; }
+  .preview-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .preview-area h2 { margin-bottom: 16px; }
+  .canvas-wrapper {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      conic-gradient(#e8e8e8 25%, transparent 25%) 0 0 / 16px 16px,
+      conic-gradient(#e8e8e8 25%, transparent 25%) 8px 8px / 16px 16px;
+    background-color: #fff;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    padding: 12px;
+    min-height: 400px;
+    overflow: auto;
+  }
+  .canvas-wrapper canvas {
+    max-width: 100%;
+    max-height: 70vh;
+    border-radius: 4px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.12);
+  }
+  .preset-btns {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .preset-btn {
+    padding: 4px 10px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    background: #fafafa;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .preset-btn:hover { border-color: #667eea; color: #667eea; }
+  .upload-zone {
+    border: 2px dashed #d9d9d9;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    background: #fafafa;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: #667eea;
+    background: #f0f3ff;
+  }
+  .upload-zone .icon { font-size: 28px; margin-bottom: 6px; }
+  .upload-zone .tip { font-size: 12px; color: #999; margin-top: 4px; }
+  .upload-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  }
+  .img-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #f6ffed;
+    border: 1px solid #b7eb8f;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #52c41a;
+  }
+  .img-info .remove-btn {
+    background: none;
+    border: none;
+    color: #ff4d4f;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .img-info .remove-btn:hover { background: #fff1f0; }
+  .btn-outline {
+    background: #fff;
+    border: 1px solid #d9d9d9;
+    color: #333;
+    margin-top: 10px;
+  }
+  .btn-outline:hover { border-color: #667eea; color: #667eea; }
+  .mode-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .mode-tab {
+    flex: 1;
+    padding: 8px 0;
+    text-align: center;
+    font-size: 13px;
+    cursor: pointer;
+    background: #fafafa;
+    border: none;
+    transition: all .15s;
+    font-weight: 500;
+    color: #666;
+  }
+  .mode-tab:not(:last-child) { border-right: 1px solid #d9d9d9; }
+  .mode-tab.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+  }
+  .mode-tab:hover:not(.active) { background: #f0f3ff; color: #667eea; }
+  .section-hidden { display: none !important; }
+  .template-section { margin-bottom: 20px; }
+  .template-section > label {
+    display: block; font-size: 13px; font-weight: 500;
+    margin-bottom: 8px; color: #555;
+  }
+  .template-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .template-card {
+    padding: 10px 8px;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .15s;
+    text-align: center;
+    background: #fff;
+    position: relative;
+  }
+  .template-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102,126,234,.15);
+    transform: translateY(-1px);
+  }
+  .template-card.active {
+    border-color: #667eea;
+    background: #f0f3ff;
+  }
+  .template-card .tpl-icon {
+    font-size: 22px;
+    margin-bottom: 4px;
+    display: block;
+  }
+  .template-card .tpl-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .template-card .tpl-desc {
+    font-size: 10px;
+    color: #999;
+    display: block;
+    line-height: 1.3;
+  }
+  .icon-picker {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .icon-btn {
+    width: 40px; height: 40px;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    background: #fafafa;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s;
+    position: relative;
+  }
+  .icon-btn:hover { border-color: #667eea; }
+  .icon-btn.active { border-color: #667eea; background: #f0f3ff; box-shadow: 0 0 0 2px rgba(102,126,234,.2); }
+  .icon-btn svg { width: 20px; height: 20px; fill: #555; }
+  .icon-btn.active svg { fill: #667eea; }
+  .icon-btn .icon-tip {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    margin-bottom: 4px;
+    pointer-events: none;
+  }
+  .icon-btn:hover .icon-tip { display: block; }
+  @media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>图片水印生成器</h1>
+  <p>输入文字，自定义样式，生成 PNG 透明水印图片</p>
+</div>
+
+<div class="container">
+  <!-- 左侧控制面板 -->
+  <div class="panel">
+    <h2>水印设置</h2>
+
+    <!-- 上传图片区域 -->
+    <div class="form-group" id="uploadSection">
+      <label>上传背景图片</label>
+      <div class="upload-zone" id="uploadZone">
+        <div class="icon">+</div>
+        <div>点击或拖拽上传图片</div>
+        <div class="tip">支持 JPG / PNG / WebP / BMP</div>
+        <input type="file" id="imageInput" accept="image/*">
+      </div>
+      <div class="img-info section-hidden" id="imgInfo">
+        <span id="imgInfoText">-</span>
+        <button class="remove-btn" onclick="removeImage()">移除</button>
+      </div>
+    </div>
+
+    <!-- 水印模板 -->
+    <div class="template-section">
+      <label>快速模板</label>
+      <div class="template-grid">
+        <div class="template-card" data-tpl="confidential" onclick="applyTemplate('confidential')">
+          <span class="tpl-icon">🔒</span>
+          <span class="tpl-name">机密文件</span>
+          <span class="tpl-desc">CONFIDENTIAL 密级</span>
+        </div>
+        <div class="template-card" data-tpl="internal" onclick="applyTemplate('internal')">
+          <span class="tpl-icon">🏢</span>
+          <span class="tpl-name">内部文件</span>
+          <span class="tpl-desc">内部使用 严禁外传</span>
+        </div>
+        <div class="template-card" data-tpl="draft" onclick="applyTemplate('draft')">
+          <span class="tpl-icon">📝</span>
+          <span class="tpl-name">设计评审</span>
+          <span class="tpl-desc">DRAFT 草稿评审</span>
+        </div>
+        <div class="template-card" data-tpl="idcard" onclick="applyTemplate('idcard')">
+          <span class="tpl-icon">🪪</span>
+          <span class="tpl-name">证件用途</span>
+          <span class="tpl-desc">仅供办理业务使用</span>
+        </div>
+        <div class="template-card" data-tpl="contract" onclick="applyTemplate('contract')">
+          <span class="tpl-icon">📋</span>
+          <span class="tpl-name">合同副本</span>
+          <span class="tpl-desc">合同副本 与原件一致</span>
+        </div>
+        <div class="template-card" data-tpl="invoice" onclick="applyTemplate('invoice')">
+          <span class="tpl-icon">🧾</span>
+          <span class="tpl-name">发票专用</span>
+          <span class="tpl-desc">发票专用 仅限报销</span>
+        </div>
+        <div class="template-card" data-tpl="copyright" onclick="applyTemplate('copyright')">
+          <span class="tpl-icon">©️</span>
+          <span class="tpl-name">版权声明</span>
+          <span class="tpl-desc">All Rights Reserved</span>
+        </div>
+        <div class="template-card" data-tpl="void" onclick="applyTemplate('void')">
+          <span class="tpl-icon">⛔</span>
+          <span class="tpl-name">已作废</span>
+          <span class="tpl-desc">VOID 已作废</span>
+        </div>
+        <div class="template-card" data-tpl="grid" onclick="applyTemplate('grid')" style="grid-column: 1 / -1;">
+          <span class="tpl-icon">◇</span>
+          <span class="tpl-name">网格水印</span>
+          <span class="tpl-desc">菱形网格线条 + 图标 + 文字，适合授权/联系方式保护</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>水印文字</label>
+      <textarea id="watermarkText" placeholder="请输入水印文字，支持多行">仅供内部使用</textarea>
+    </div>
+
+    <div class="form-group">
+      <label>字体</label>
+      <select id="fontFamily">
+        <option value="Microsoft YaHei">微软雅黑</option>
+        <option value="SimHei">黑体</option>
+        <option value="SimSun">宋体</option>
+        <option value="KaiTi">楷体</option>
+        <option value="FangSong">仿宋</option>
+        <option value="Arial">Arial</option>
+        <option value="Georgia">Georgia</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>字体大小</label>
+      <div class="range-wrap">
+        <input type="range" id="fontSize" min="12" max="200" value="40">
+        <span class="range-val" id="fontSizeVal">40px</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>旋转角度</label>
+      <div class="range-wrap">
+        <input type="range" id="rotation" min="-180" max="180" value="-30">
+        <span class="range-val" id="rotationVal">-30°</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>透明度</label>
+      <div class="range-wrap">
+        <input type="range" id="opacity" min="1" max="100" value="20">
+        <span class="range-val" id="opacityVal">20%</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>文字颜色</label>
+      <div class="color-input">
+        <input type="color" id="textColor" value="#000000">
+        <span id="textColorVal">#000000</span>
+      </div>
+    </div>
+
+    <div class="form-group section-hidden">
+      <div class="checkbox-group">
+        <input type="checkbox" id="tileMode" checked>
+        <span>平铺水印（重复排列）</span>
+      </div>
+    </div>
+
+    <!-- 水印位置（非平铺时显示） -->
+    <div class="form-group section-hidden" id="positionSection">
+      <label>水印位置</label>
+      <select id="wmPosition">
+        <option value="center">居中</option>
+        <option value="bottom-center" selected>底部居中</option>
+        <option value="bottom-left">左下角</option>
+        <option value="bottom-right">右下角</option>
+        <option value="top-left">左上角</option>
+        <option value="top-right">右上角</option>
+        <option value="top-center">顶部居中</option>
+      </select>
+    </div>
+
+    <!-- 网格水印专属控件 -->
+    <div class="form-group section-hidden" id="gridSection">
+      <label>图标选择</label>
+      <div class="icon-picker" id="iconPicker">
+        <div class="icon-btn" data-icon="none" onclick="selectIcon('none')" title="无图标">
+          <span class="icon-tip">无图标</span>
+          <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </div>
+        <div class="icon-btn" data-icon="phone" onclick="selectIcon('phone')" title="电话">
+          <span class="icon-tip">电话</span>
+          <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.15 6.59 6.59l2.2-2.2c.28-.28.67-.36 1.02-.25 1.12.37 2.32.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+        </div>
+        <div class="icon-btn" data-icon="email" onclick="selectIcon('email')" title="邮件">
+          <span class="icon-tip">邮件</span>
+          <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        </div>
+        <div class="icon-btn" data-icon="chat" onclick="selectIcon('chat')" title="微信/聊天">
+          <span class="icon-tip">微信/聊天</span>
+          <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+        </div>
+        <div class="icon-btn" data-icon="globe" onclick="selectIcon('globe')" title="网址">
+          <span class="icon-tip">网址</span>
+          <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
+        </div>
+        <div class="icon-btn" data-icon="lock" onclick="selectIcon('lock')" title="锁/安全">
+          <span class="icon-tip">锁/安全</span>
+          <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/></svg>
+        </div>
+        <div class="icon-btn" data-icon="star" onclick="selectIcon('star')" title="星星">
+          <span class="icon-tip">星星</span>
+          <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+        </div>
+        <div class="icon-btn" data-icon="location" onclick="selectIcon('location')" title="位置">
+          <span class="icon-tip">位置</span>
+          <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group section-hidden" id="gridSpacingSection">
+      <label>网格大小</label>
+      <div class="range-wrap">
+        <input type="range" id="gridSpacing" min="300" max="600" value="360">
+      </div>
+    </div>
+
+    <div class="form-group section-hidden" id="gridLineWidthSection">
+      <label>网格线条粗细</label>
+      <div class="range-wrap">
+        <input type="range" id="gridLineWidth" min="30" max="150" value="80">
+        <span class="range-val" id="gridLineWidthVal">8.0px</span>
+      </div>
+    </div>
+
+    <button class="btn btn-outline" onclick="resetConfig()">重置配置</button>
+    <button class="btn btn-download" onclick="download()">下载 PNG 图片</button>
+  </div>
+
+  <!-- 右侧预览区域 -->
+  <div class="panel preview-area">
+    <h2>预览效果</h2>
+    <div class="canvas-wrapper">
+      <canvas id="canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+let uploadedImage = null;
+let uploadedFileName = '';
+let canvasW = 800;   // 默认画布宽（上传图片后自动更新）
+let canvasH = 600;   // 默认画布高
+
+// === Cookie 持久化（仅 http/https 协议） ===
+const COOKIE_NAME = 'wm_gen_cfg';
+const canUseCookie = () => location.protocol === 'http:' || location.protocol === 'https:';
+
+function setCookie(name, value, days) {
+  const d = new Date();
+  d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${encodeURIComponent(value)};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+}
+
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function saveConfig() {
+  if (!canUseCookie()) return;
+  const cfg = {
+    watermarkText: $('watermarkText').value,
+    fontFamily: $('fontFamily').value,
+    fontSize: $('fontSize').value,
+    rotation: $('rotation').value,
+    opacity: $('opacity').value,
+    textColor: $('textColor').value,
+    gridSpacing: $('gridSpacing').value,
+    gridLineWidth: $('gridLineWidth').value,
+    currentIcon: currentIcon,
+  };
+  setCookie(COOKIE_NAME, JSON.stringify(cfg), 30);
+}
+
+function loadConfig() {
+  if (!canUseCookie()) return;
+  const raw = getCookie(COOKIE_NAME);
+  if (!raw) {
+    // 无 cookie，将当前 HTML 默认值写入 cookie 保存
+    saveConfig();
+    return;
+  }
+  try {
+    const cfg = JSON.parse(raw);
+    if (cfg.watermarkText != null) $('watermarkText').value = cfg.watermarkText;
+    if (cfg.fontFamily)   $('fontFamily').value   = cfg.fontFamily;
+    if (cfg.fontSize)     $('fontSize').value     = cfg.fontSize;
+    if (cfg.rotation != null) $('rotation').value = cfg.rotation;
+    if (cfg.opacity != null)  $('opacity').value  = cfg.opacity;
+    if (cfg.textColor)    $('textColor').value    = cfg.textColor;
+    if (cfg.gridSpacing)  $('gridSpacing').value  = cfg.gridSpacing;
+    if (cfg.gridLineWidth) $('gridLineWidth').value = cfg.gridLineWidth;
+    if (cfg.currentIcon) {
+      currentIcon = cfg.currentIcon;
+      document.querySelectorAll('.icon-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.icon === cfg.currentIcon);
+      });
+    }
+    // 更新线宽显示
+    $('gridLineWidthVal').textContent = (parseInt($('gridLineWidth').value) / 10).toFixed(1) + 'px';
+  } catch(e) {
+    console.error('加载配置失败:', e);
+  }
+}
+
+// 默认配置
+const DEFAULTS = {
+  watermarkText: '仅供内部使用',
+  fontFamily: 'Microsoft YaHei',
+  fontSize: 40,
+  rotation: -30,
+  opacity: 20,
+  textColor: '#000000',
+  gridSpacing: 360,
+  gridLineWidth: 80,
+  currentIcon: 'phone',
+};
+
+function resetConfig() {
+  $('watermarkText').value = DEFAULTS.watermarkText;
+  $('fontFamily').value    = DEFAULTS.fontFamily;
+  $('fontSize').value      = DEFAULTS.fontSize;
+  $('rotation').value      = DEFAULTS.rotation;
+  $('opacity').value       = DEFAULTS.opacity;
+  $('textColor').value     = DEFAULTS.textColor;
+  $('gridSpacing').value   = DEFAULTS.gridSpacing;
+  $('gridLineWidth').value = DEFAULTS.gridLineWidth;
+  currentIcon = DEFAULTS.currentIcon;
+  document.querySelectorAll('.icon-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.icon === DEFAULTS.currentIcon);
+  });
+  $('gridLineWidthVal').textContent = (DEFAULTS.gridLineWidth / 10).toFixed(1) + 'px';
+  // 清除 cookie 并写入新默认值
+  if (canUseCookie()) {
+    document.cookie = `${COOKIE_NAME}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+    saveConfig();
+  }
+  render();
+}
+// 配置变更时自动保存
+['watermarkText','fontFamily','fontSize','rotation','opacity','textColor','gridSpacing','gridLineWidth'].forEach(id => {
+  $(id).addEventListener('change', saveConfig);
+  $(id).addEventListener('blur', saveConfig);
+});
+// 绑定事件
+['fontSize','rotation','opacity'].forEach(id => {
+  $(id).addEventListener('input', render);
+});
+['fontFamily','watermarkText','textColor','gridSpacing','gridLineWidth'].forEach(id => {
+  $(id).addEventListener('input', render);
+  $(id).addEventListener('change', render);
+});
+
+// 网格线宽实时显示
+$('gridLineWidth').addEventListener('input', () => {
+  $('gridLineWidthVal').textContent = (parseInt($('gridLineWidth').value) / 10).toFixed(1) + 'px';
+});
+
+// 当前选中的图标
+let currentIcon = 'phone';
+function selectIcon(name) {
+  currentIcon = name;
+  document.querySelectorAll('.icon-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.icon === name);
+  });
+  saveConfig();
+  render();
+}
+// 初始高亮电话图标
+document.querySelector('.icon-btn[data-icon="phone"]')?.classList.add('active');
+
+// 图片上传
+const imageInput = $('imageInput');
+const uploadZone = $('uploadZone');
+
+imageInput.addEventListener('change', e => {
+  if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+uploadZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  uploadZone.classList.add('dragover');
+});
+uploadZone.addEventListener('dragleave', () => {
+  uploadZone.classList.remove('dragover');
+});
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    handleFile(e.dataTransfer.files[0]);
+  }
+});
+
+function handleFile(file) {
+  if (!file.type.startsWith('image/')) {
+    alert('请上传图片文件');
+    return;
+  }
+  uploadedFileName = file.name.replace(/\.[^.]+$/, '');
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      uploadedImage = img;
+      canvasW = img.width;
+      canvasH = img.height;
+      $('imgInfoText').textContent = `${file.name}（${img.width} × ${img.height}）`;
+      $('imgInfo').classList.remove('section-hidden');
+      uploadZone.classList.add('section-hidden');
+      render();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage() {
+  uploadedImage = null;
+  uploadedFileName = '';
+  imageInput.value = '';
+  canvasW = 800;
+  canvasH = 600;
+  $('imgInfo').classList.add('section-hidden');
+  uploadZone.classList.remove('section-hidden');
+  render();
+}
+
+// 水印模板
+// 模板只定义文字内容；样式（字体/字号/旋转/透明度/颜色）由用户自行调整并持久化保存
+const templates = {
+  confidential: { text: '机密\nCONFIDENTIAL' },
+  internal:     { text: '内部文件\n严禁外传' },
+  draft:        { text: 'DRAFT\n评审中' },
+  idcard:       { text: '仅供办理XX业务使用\n他用无效' },
+  contract:     { text: '合同副本\n与原件一致' },
+  invoice:      { text: '发票专用\n仅限报销使用' },
+  copyright:    { text: '© 2024 Your Name\nAll Rights Reserved' },
+  void:         { text: '已作废\nVOID' },
+  grid:         { text: '138-0000-0000', isGrid: true, icon: 'phone' },
+};
+
+function applyTemplate(name) {
+  const tpl = templates[name];
+  if (!tpl) return;
+
+  document.querySelectorAll('.template-card').forEach(card => {
+    card.classList.toggle('active', card.dataset.tpl === name);
+  });
+
+  // 隐藏所有特殊区块
+  $('positionSection').classList.add('section-hidden');
+  $('gridSection').classList.add('section-hidden');
+  $('gridSpacingSection').classList.add('section-hidden');
+  $('gridLineWidthSection').classList.add('section-hidden');
+
+  // 仅更新水印文字，保留用户已调整的所有样式（字体、字号、旋转、透明度、颜色等）
+  if (tpl.text) $('watermarkText').value = tpl.text;
+
+  if (tpl.isGrid) {
+    $('gridSection').classList.remove('section-hidden');
+    $('gridSpacingSection').classList.remove('section-hidden');
+    $('gridLineWidthSection').classList.remove('section-hidden');
+    if (tpl.icon) {
+      selectIcon(tpl.icon);
+    }
+  }
+
+  render();
+}
+
+function render() {
+  const canvas = $('canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvasW;
+  const H = canvasH;
+  canvas.width = W;
+  canvas.height = H;
+
+  const text = $('watermarkText').value || '水印文字';
+  const font = $('fontFamily').value;
+  const size = parseInt($('fontSize').value);
+  const angle = parseInt($('rotation').value) * Math.PI / 180;
+  const alpha = parseInt($('opacity').value) / 100;
+  const color = $('textColor').value;
+  const spacingMul = 1.3;
+  const lineMul = 1.6;
+  const isGridMode = !$('gridSection').classList.contains('section-hidden');
+  const gridSpacing = parseInt($('gridSpacing').value) || 180;
+  const gridLineWidth = (parseInt($('gridLineWidth').value) || 8) / 10;
+
+  // 更新显示值
+  $('fontSizeVal').textContent = size + 'px';
+  $('rotationVal').textContent = $('rotation').value + '°';
+  $('opacityVal').textContent = $('opacity').value + '%';
+  $('textColorVal').textContent = color.toUpperCase();
+
+  // 绘制背景
+  ctx.clearRect(0, 0, W, H);
+  if (uploadedImage) {
+    ctx.drawImage(uploadedImage, 0, 0, W, H);
+  } else {
+    ctx.fillStyle = '#f5f5f5';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#bbb';
+    ctx.font = '20px "Microsoft YaHei"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('请先上传背景图片', W / 2, H / 2);
+  }
+
+  // === 网格水印模式 ===
+  if (isGridMode) {
+    try {
+      drawGridWatermark(ctx, W, H, text, font, size, alpha, color, gridSpacing, gridLineWidth, angle);
+    } catch(e) {
+      console.error('网格水印渲染错误:', e);
+    }
+    ctx.globalAlpha = 1;
+    return;
+  }
+
+  // === 普通水印模式 ===
+  ctx.font = `${size}px "${font}"`;
+  ctx.fillStyle = color;
+  ctx.globalAlpha = alpha;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const lines = text.split('\n');
+  const lineHeight = size * lineMul;
+
+  const tmpCanvas = document.createElement('canvas');
+  const tmpCtx = tmpCanvas.getContext('2d');
+  tmpCtx.font = `${size}px "${font}"`;
+  let maxW = 0;
+  lines.forEach(line => {
+    const m = tmpCtx.measureText(line);
+    if (m.width > maxW) maxW = m.width;
+  });
+  const blockW = maxW * spacingMul + size * 2;
+  const blockH = lines.length * lineHeight + size * 2;
+  const diag = Math.ceil(Math.sqrt(blockW * blockW + blockH * blockH));
+
+  for (let y = -diag; y < H + diag; y += blockH) {
+    for (let x = -diag; x < W + diag; x += blockW) {
+      ctx.save();
+      ctx.translate(x + blockW / 2, y + blockH / 2);
+      ctx.rotate(angle);
+      drawText(ctx, lines, lineHeight);
+      ctx.restore();
+    }
+  }
+
+  ctx.globalAlpha = 1;
+}
+
+function drawText(ctx, lines, lineHeight) {
+  const totalH = (lines.length - 1) * lineHeight;
+  lines.forEach((line, i) => {
+    ctx.fillText(line, 0, -totalH / 2 + i * lineHeight);
+  });
+}
+
+// Material Design icon SVG paths (24x24 viewBox)
+const ICON_PATHS = {
+  phone: 'M6.62 10.79c1.44 2.83 3.76 5.15 6.59 6.59l2.2-2.2c.28-.28.67-.36 1.02-.25 1.12.37 2.32.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z',
+  email: 'M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z',
+  chat: 'M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z',
+  globe: 'M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z',
+  lock: 'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z',
+  star: 'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z',
+  location: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z',
+};
+
+// 绘制图标（SVG Path2D）
+function drawIcon(ctx, iconKey, cx, cy, iconSize) {
+  if (iconKey === 'none' || !ICON_PATHS[iconKey]) return 0;
+  try {
+    const path = new Path2D(ICON_PATHS[iconKey]);
+    ctx.save();
+    ctx.translate(cx - iconSize / 2, cy - iconSize / 2);
+    ctx.scale(iconSize / 24, iconSize / 24);
+    ctx.fill(path);
+    ctx.restore();
+  } catch(e) {
+    // Path2D 不支持时回退为文字占位
+    ctx.save();
+    ctx.font = `${iconSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('☎', cx, cy);
+    ctx.restore();
+  }
+  return iconSize;
+}
+
+// 网格水印绘制
+function drawGridWatermark(ctx, W, H, text, font, size, alpha, color, gridSpacing, gridLineWidth, angle) {
+  const iconGap = size * 0.4;
+  const iconSize = size;
+  const step = gridSpacing;
+
+  // 计算 icon + 文字的总宽度
+  ctx.font = `${size}px "${font}"`;
+  const textWidth = ctx.measureText(text).width;
+  const hasIcon = currentIcon !== 'none' && ICON_PATHS[currentIcon];
+  const totalW = (hasIcon ? iconSize + iconGap : 0) + textWidth;
+
+  // 1. 绘制菱形网格线条
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = gridLineWidth;
+  ctx.globalAlpha = alpha * 0.35;
+
+  // 对角线 \ 方向: y = x + c
+  for (let c = -H - step; c <= W + step; c += step) {
+    ctx.beginPath();
+    ctx.moveTo(c, 0);
+    ctx.lineTo(c + H, H);
+    ctx.stroke();
+  }
+  // 对角线 / 方向: y = -x + c
+  for (let c = -step; c <= W + H + step; c += step) {
+    ctx.beginPath();
+    ctx.moveTo(c, 0);
+    ctx.lineTo(c - H, H);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // 2. 在菱形网格中心放置 icon + 文字
+  // 网格线：\ 方向 y-x = k*step，/ 方向 y+x = m*step
+  // 菱形单元格中心（k与k+1线、m与m+1线的中间线交点）：
+  //   x = (m - k) * step / 2
+  //   y = (k + m) * step / 2
+  // 有效中心条件：(k + m) 为奇数（排除网格线交点）
+  ctx.save();
+  ctx.font = `${size}px "${font}"`;
+  ctx.fillStyle = color;
+  ctx.globalAlpha = alpha;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  const halfStep = step / 2;
+  const range = Math.ceil((W + H) / step) + 4;
+
+  for (let k = -range; k <= range; k++) {
+    for (let m = -range; m <= range; m++) {
+      // 只保留真正的菱形中心（跳过网格线交点）
+      if ((k + m) % 2 === 0) continue;
+      // 每隔一行留空，使约一半菱形有文字（稀疏棋盘效果）
+      if (k % 2 !== 0) continue;
+
+      const cx = (m - k) * halfStep;
+      const cy = (k + m) * halfStep;
+
+      if (cx < -step || cx > W + step || cy < -step || cy > H + step) continue;
+
+      // 以菱形中心为原点，旋转后绘制 icon + 文字
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angle);
+
+      let drawX = -totalW / 2;
+      if (hasIcon) {
+        drawIcon(ctx, currentIcon, drawX + iconSize / 2, 0, iconSize);
+        drawX += iconSize + iconGap;
+      }
+      ctx.fillText(text, drawX, 0);
+
+      ctx.restore();
+    }
+  }
+
+  ctx.restore();
+}
+
+function download() {
+  const canvas = $('canvas');
+  const link = document.createElement('a');
+  link.download = (uploadedFileName || 'image') + '_watermark.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// 加载上次配置 → 初始渲染
+try { loadConfig(); } catch(e) { console.error('加载配置错误:', e); }
+try { render(); } catch(e) { console.error('初始渲染错误:', e); }
+</script>
+</body>
+</html>
