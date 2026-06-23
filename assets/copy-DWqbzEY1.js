@@ -1,4 +1,4 @@
-import{a3 as u}from"./vendor-DGoPaHD3.js";/**
+import{W as u}from"./vendor-Cgqk7auD.js";/**
  * @license lucide-vue-next v0.577.0 - ISC
  *
  * This source code is licensed under the ISC license.
